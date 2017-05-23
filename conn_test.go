@@ -2,6 +2,7 @@ package prestgo
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -414,7 +415,7 @@ func TestDoubleConverter(t *testing.T) {
 	}{
 
 		{
-			val:      0.91,
+			val:      json.Number("0.91"),
 			expected: driver.Value(0.91),
 			err:      false,
 		},
@@ -479,7 +480,7 @@ func TestBigIntConverter(t *testing.T) {
 	}{
 
 		{
-			val:      1000.0,
+			val:      json.Number("1000"),
 			expected: driver.Value(int64(1000)),
 			err:      false,
 		},

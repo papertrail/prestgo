@@ -244,8 +244,14 @@ func (r *rows) waitForData() (*queryResponse, bool, error) {
 		return nil, false, ErrQueryFailed
 	}
 
-	var qresp queryResponse
-	err = json.NewDecoder(nextResp.Body).Decode(&qresp)
+	var (
+		qresp   queryResponse
+		decoder = json.NewDecoder(nextResp.Body)
+	)
+
+	decoder.UseNumber()
+
+	err = decoder.Decode(&qresp)
 	nextResp.Body.Close()
 	if err != nil {
 		return nil, false, err
@@ -340,26 +346,28 @@ func (fn valueConverterFunc) ConvertValue(v interface{}) (driver.Value, error) {
 }
 
 // bigIntConverter converts a value from the underlying json response into an int64.
-// The Go JSON decoder uses float64 for generic numeric values
+// The Go JSON decoder must be configured to return a json.Number
 var bigIntConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
 	if val == nil {
 		return nil, nil
 	}
 
-	if vv, ok := val.(float64); ok {
-		return int64(vv), nil
+	if vv, ok := val.(json.Number); ok {
+		return vv.Int64()
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type int64", DriverName, val, val)
 })
 
 // doubleConverter converts a value from the underlying json response into an int64.
-// The Go JSON decoder uses float64 for generic numeric values
+// The Go JSON decoder must be configured to return a json.Number
 var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
 	if val == nil {
 		return nil, nil
 	}
 
 	switch vv := val.(type) {
+	case json.Number:
+		return vv.Float64()
 	case float64:
 		return vv, nil
 	case string:
